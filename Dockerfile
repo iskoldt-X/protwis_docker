@@ -21,8 +21,7 @@ RUN apt-get update -y && \
         tzdata \
         wget \
         ca-certificates \
-        build-essential \          # Install build tools
-        libpq-dev && \             # Install PostgreSQL development headers
+        build-essential && \          # Install build tools
     # Set timezone
     ln -fs /usr/share/zoneinfo/Europe/Oslo /etc/localtime && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
