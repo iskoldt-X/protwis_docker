@@ -1,19 +1,34 @@
+# Use Ubuntu 22.04 as the base image
 FROM ubuntu:22.04
 
-# Author: iskoldt-X
-
-# This Dockerfile is based on Ubuntu 22.04 and installs the latest Miniconda for x86_64 or aarch64 architectures.
-
+# Maintainer information
 LABEL maintainer="iskoldt-X"
 
-# Install necessary packages and Miniconda in a single step
+# Set environment variables
+ENV CONDA_DIR=/usr/local/conda \
+    PATH=/usr/local/conda/bin:$PATH \
+    LANG=en_US.UTF-8 \
+    LANGUAGE=en_US:en \
+    LC_ALL=en_US.UTF-8
+
+# Copy the requirements.txt file into the image
+COPY requirements.txt /requirements.txt
+
+# Install necessary packages, set timezone and locale, install Miniconda, create Conda environment, and install packages
 RUN apt-get update -y && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-        locales tzdata wget ca-certificates && \
+        locales \
+        tzdata \
+        wget \
+        ca-certificates && \
+    # Set timezone
+    ln -fs /usr/share/zoneinfo/Europe/Oslo /etc/localtime && \
+    echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
+    locale-gen && \
+    # Clean up APT
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    ln -fs /usr/share/zoneinfo/Europe/Oslo /etc/localtime && \
-    sed -i '/en_US.UTF-8/s/^# //g' /etc/locale.gen && locale-gen && \
+    # Determine architecture and download the appropriate Miniconda installer
     UNAME_M="$(uname -m)" && \
     if [ "${UNAME_M}" = "x86_64" ]; then \
         MINICONDA=Miniconda3-latest-Linux-x86_64.sh; \
@@ -23,16 +38,27 @@ RUN apt-get update -y && \
         echo "Unsupported architecture: ${UNAME_M}"; exit 1; \
     fi && \
     wget -q -O /tmp/$MINICONDA https://repo.anaconda.com/miniconda/$MINICONDA && \
-    bash /tmp/$MINICONDA -b -p /usr/local/conda && \
+    bash /tmp/$MINICONDA -b -p $CONDA_DIR && \
     rm /tmp/$MINICONDA && \
-    /usr/local/conda/bin/conda clean -afy
+    # Initialize Conda
+    $CONDA_DIR/bin/conda clean -afy && \
+    # Create Conda environment and install packages
+    mkdir /tmp/conda_install && \
+    cp /requirements.txt /tmp/conda_install/ && \
+    /bin/bash -c "source $CONDA_DIR/etc/profile.d/conda.sh && \
+        conda create -n gpcrdb python=3.8 -y && \
+        conda install -n gpcrdb -c conda-forge rdkit numpy scipy scikit-learn numexpr 'libblas=*=*openblas' -y && \
+        conda run -n gpcrdb pip install -r /tmp/conda_install/requirements.txt && \
+        conda run -n gpcrdb pip install git+https://github.com/rdkit/django-rdkit.git && \
+        conda clean -afy && \
+        rm -rf /tmp/conda_install"
 
-# Set environment variables
-ENV CONDA_DIR=/usr/local/conda
-ENV PATH=$CONDA_DIR/bin:$PATH
-ENV LANG=en_US.UTF-8
-ENV LANGUAGE=en_US:en
-ENV LC_ALL=en_US.UTF-8
 
-# Add a default command
+# Set the default shell to bash
+SHELL ["/bin/bash", "-c"]
+
+# Activate the Conda environment by default
+RUN echo "source $CONDA_DIR/etc/profile.d/conda.sh && conda activate gpcrdb" >> ~/.bashrc
+
+# Set the default command to bash
 CMD ["/bin/bash"]
