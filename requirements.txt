@@ -7,6 +7,7 @@ django-debug-toolbar==1.11
 django-polymorphic==2.0.3
 django-rest-swagger==2.2.0
 djangorestframework==3.9.3
+docker
 ipython==7.5.0
 google-api-python-client==1.7.11
 psycopg2==2.8.6
@@ -14,7 +15,7 @@ xlrd==1.2.0
 PyYAML==5.1
 XlsxWriter==1.1.8
 Sphinx==2.0.1
-openpyxl==3.0.0
+openpyxl==3.1.5
 xmltodict==0.12.0
 scikit-learn
 freesasa==2.1.0
