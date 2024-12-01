@@ -11,7 +11,7 @@ ENV CONDA_DIR=/usr/local/conda \
     LANGUAGE=en_US:en \
     LC_ALL=en_US.UTF-8
 
-# Copy the requirements.txt file into the image
+# Copy requirements.txt first to leverage Docker cache
 COPY requirements.txt /requirements.txt
 
 # Install necessary packages, set timezone and locale, install Miniconda, create Conda environment, and install packages
@@ -20,7 +20,9 @@ RUN apt-get update -y && \
         locales \
         tzdata \
         wget \
-        ca-certificates && \
+        ca-certificates \
+        build-essential \          # Install build tools
+        libpq-dev && \             # Install PostgreSQL development headers
     # Set timezone
     ln -fs /usr/share/zoneinfo/Europe/Oslo /etc/localtime && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
@@ -40,19 +42,15 @@ RUN apt-get update -y && \
     wget -q -O /tmp/$MINICONDA https://repo.anaconda.com/miniconda/$MINICONDA && \
     bash /tmp/$MINICONDA -b -p $CONDA_DIR && \
     rm /tmp/$MINICONDA && \
-    # Initialize Conda
+    # Initialize Conda and clean
     $CONDA_DIR/bin/conda clean -afy && \
     # Create Conda environment and install packages
-    mkdir /tmp/conda_install && \
-    cp /requirements.txt /tmp/conda_install/ && \
     /bin/bash -c "source $CONDA_DIR/etc/profile.d/conda.sh && \
         conda create -n gpcrdb python=3.8 -y && \
         conda install -n gpcrdb -c conda-forge rdkit numpy scipy scikit-learn numexpr 'libblas=*=*openblas' -y && \
-        conda run -n gpcrdb pip install -r /tmp/conda_install/requirements.txt && \
+        conda run -n gpcrdb pip install -r /requirements.txt && \
         conda run -n gpcrdb pip install git+https://github.com/rdkit/django-rdkit.git && \
-        conda clean -afy && \
-        rm -rf /tmp/conda_install"
-
+        conda clean -afy"
 
 # Set the default shell to bash
 SHELL ["/bin/bash", "-c"]
