@@ -20,6 +20,7 @@ RUN apt-get update -y && \
         locales \
         tzdata \
         wget \
+        git \
         ca-certificates \
         build-essential \
         libpq-dev && \
