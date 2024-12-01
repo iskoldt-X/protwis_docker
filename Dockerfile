@@ -21,15 +21,13 @@ RUN apt-get update -y && \
         tzdata \
         wget \
         ca-certificates \
-        build-essential && \          # Install build tools
-    # Set timezone
+        build-essential \
+        libpq-dev && \
     ln -fs /usr/share/zoneinfo/Europe/Oslo /etc/localtime && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
     locale-gen && \
-    # Clean up APT
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    # Determine architecture and download the appropriate Miniconda installer
     UNAME_M="$(uname -m)" && \
     if [ "${UNAME_M}" = "x86_64" ]; then \
         MINICONDA=Miniconda3-latest-Linux-x86_64.sh; \
@@ -41,9 +39,7 @@ RUN apt-get update -y && \
     wget -q -O /tmp/$MINICONDA https://repo.anaconda.com/miniconda/$MINICONDA && \
     bash /tmp/$MINICONDA -b -p $CONDA_DIR && \
     rm /tmp/$MINICONDA && \
-    # Initialize Conda and clean
     $CONDA_DIR/bin/conda clean -afy && \
-    # Create Conda environment and install packages
     /bin/bash -c "source $CONDA_DIR/etc/profile.d/conda.sh && \
         conda create -n gpcrdb python=3.8 -y && \
         conda install -n gpcrdb -c conda-forge rdkit numpy scipy scikit-learn numexpr 'libblas=*=*openblas' -y && \
