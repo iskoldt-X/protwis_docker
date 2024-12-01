@@ -23,6 +23,8 @@ RUN apt-get update -y && \
         git \
         ca-certificates \
         build-essential \
+        libxml2-dev \
+        libxslt1-dev \
         libpq-dev && \
     ln -fs /usr/share/zoneinfo/Europe/Oslo /etc/localtime && \
     echo "en_US.UTF-8 UTF-8" > /etc/locale.gen && \
